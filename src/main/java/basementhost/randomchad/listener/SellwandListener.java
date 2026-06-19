@@ -76,9 +76,12 @@ public final class SellwandListener implements Listener {
 
         SellResult result = sellService.sellContainer(player, container.getInventory());
         switch (result.status()) {
-            case SOLD -> player.sendMessage(plugin.message("sold")
-                    .replace("{amount}", String.valueOf(result.amountSold()))
-                    .replace("{money}", plugin.economy().format(result.money())));
+            case SOLD -> {
+                player.sendMessage(plugin.message("sold")
+                        .replace("{amount}", String.valueOf(result.amountSold()))
+                        .replace("{money}", plugin.economy().format(result.money())));
+                player.sendMessage(plugin.message("fee-applied").replace("{fee}", plugin.economy().format(result.fee())));
+            }
             case NOTHING_TO_SELL -> player.sendMessage(plugin.message("no-items"));
             case VAULT_FAILED -> player.sendMessage(plugin.message("vault-error"));
         }

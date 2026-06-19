@@ -27,6 +27,7 @@ public final class SellService {
     private final EcoType vaultEcoType;
     private final Set<Material> allowedContainers;
     private final boolean sellShulkerContents;
+    private final int sellFee;
 
     public SellService(SellwandPlugin plugin) {
         this.plugin = plugin;
@@ -35,6 +36,7 @@ public final class SellService {
         this.vaultEcoType = configuredEcoType == null ? EconomyType.getFromString("VAULT") : configuredEcoType;
         this.allowedContainers = loadAllowedContainers();
         this.sellShulkerContents = plugin.getConfig().getBoolean("sell-shulker-contents", true);
+        this.sellFee = plugin.getConfig().getInt("handling-fee", 5);
     }
 
     public SellResult sellContainer(Player player, Inventory inventory) {
@@ -60,7 +62,8 @@ public final class SellService {
         if (amountSold <= 0) {
             return SellResult.nothingToSell();
         }
-
+        double fee = money * (sellFee / 100D);
+        money = Math.max(0D, money - fee);
         EconomyResponse response = plugin.economy().depositPlayer(player, money);
         if (response == null || !response.transactionSuccess()) {
             return SellResult.vaultFailed();
@@ -68,7 +71,7 @@ public final class SellService {
 
         applySoldItems(inventory, plan, working, eligibleSlots);
         sellPrices.updateLimits();
-        return SellResult.sold(amountSold, money);
+        return SellResult.sold(amountSold, money, fee);
     }
 
     public boolean isAllowedContainer(Material material) {

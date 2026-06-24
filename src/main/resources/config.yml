@@ -33,6 +33,11 @@ economy-type: VAULT
 # Minimum delay between uses per player, in milliseconds.
 cooldown-ms: 750
 
+# First right-click asks for confirmation. Right-click the same container again before
+# this timeout expires to sell it.
+confirm-sell: true
+confirm-timeout-ms: 10000
+
 # Handling Fee, in percentage
 handling-fee: 5
 
@@ -40,6 +45,7 @@ messages:
   prefix: "&8[&aSellWand&8] &r"
   no-permission: "&cYou do not have permission to use this sell wand."
   invalid-container: "&cThis block is not a supported sell container."
+  confirm-sell: "&eRight-click this container again within {seconds} seconds to confirm the sale."
   no-items: "&eThere are no items in this container that can be sold right now."
   sold: "&aSold &f{amount}&a item(s) for &f{money}&a."
   cooldown: "&ePlease wait before using the sell wand again."

@@ -23,6 +23,7 @@ public final class SellwandListener implements Listener {
     private final SellwandPlugin plugin;
     private final SellService sellService;
     private final Map<UUID, Long> cooldowns = new HashMap<>();
+    private final Map<UUID, PendingSell> pendingSells = new HashMap<>();
 
     public SellwandListener(SellwandPlugin plugin, SellService sellService) {
         this.plugin = plugin;
@@ -65,6 +66,10 @@ public final class SellwandListener implements Listener {
             return;
         }
 
+        if (plugin.getConfig().getBoolean("confirm-sell", true) && !confirmSell(player, block)) {
+            return;
+        }
+
         long now = System.currentTimeMillis();
         long cooldownMs = Math.max(0L, plugin.getConfig().getLong("cooldown-ms", 750L));
         long nextAllowed = cooldowns.getOrDefault(player.getUniqueId(), 0L);
@@ -87,6 +92,25 @@ public final class SellwandListener implements Listener {
         }
     }
 
+    private boolean confirmSell(Player player, Block block) {
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        long timeoutMs = Math.max(0L, plugin.getConfig().getLong("confirm-timeout-ms", 10000L));
+        long expiresAt = now + timeoutMs;
+        BlockKey blockKey = BlockKey.from(block);
+        PendingSell pending = pendingSells.get(playerId);
+
+        if (pending != null && pending.blockKey().equals(blockKey) && now <= pending.expiresAt()) {
+            pendingSells.remove(playerId);
+            return true;
+        }
+
+        pendingSells.put(playerId, new PendingSell(blockKey, expiresAt));
+        long timeoutSeconds = (long) Math.ceil(timeoutMs / 1000D);
+        player.sendMessage(plugin.message("confirm-sell").replace("{seconds}", String.valueOf(timeoutSeconds)));
+        return false;
+    }
+
     private boolean isWand(ItemStack item) {
         if (item == null || item.getType().isAir()) {
             return false;
@@ -95,5 +119,14 @@ public final class SellwandListener implements Listener {
         String configured = plugin.getConfig().getString("wand-material", "STICK");
         Material material = Material.matchMaterial(configured == null ? "STICK" : configured);
         return item.getType() == (material == null ? Material.STICK : material);
+    }
+
+    private record PendingSell(BlockKey blockKey, long expiresAt) {
+    }
+
+    private record BlockKey(UUID worldId, int x, int y, int z) {
+        private static BlockKey from(Block block) {
+            return new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+        }
     }
 }
